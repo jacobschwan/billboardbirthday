@@ -1,0 +1,108 @@
+---
+title: "Untitled"
+author: "Jacob Schwan"
+date: "9/11/2020"
+output: html_document
+---
+
+```{r}
+pacman::p_load(tidyverse, lubridate, rvest, polite)
+```
+
+```{r}
+birthdate <- as.Date("1985-09-11")
+
+birthdays <- seq.Date(from = birthdate, by = "year", length.out = year(Sys.Date()) - year(birthdate) + 1)
+
+chart_dates <- ceiling_date(birthdays, unit = "weeks", week_start = 6) 
+```
+
+```{r}
+billboard_session <- bow("https://www.billboard.com/charts/hot-100/")
+
+
+```
+
+
+```{r}
+#' Title
+#'
+#' @param bb_date 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+
+get_bb_hot_100 <- function(bb_date, bow_session) {
+    print(bb_date)
+    
+    billboard_url <- paste0("https://www.billboard.com/charts/hot-100/", format(bb_date, "%Y-%m-%d"))
+    
+    if(is.session(bow_session)) {
+        billboard_page <- nod(bow_session, path = billboard_url) %>%
+            scrape()
+    } else {
+        billboard_page <- bow(billboard_url) %>%
+            scrape()
+    }
+    
+    rank <- billboard_page %>%
+        html_node("ol.chart-list__elements") %>%
+        html_nodes("span.chart-element__rank__number") %>%
+        html_text() %>%
+        str_remove_all("\\D") %>%
+        parse_integer()
+    
+    song <- billboard_page %>%
+        html_node("ol.chart-list__elements") %>%
+        html_nodes("span.chart-element__information__song") %>%
+        html_text() %>%
+        str_squish()
+    
+    artist <- billboard_page %>%
+        html_node("ol.chart-list__elements") %>%
+        html_nodes("span.chart-element__information__artist") %>%
+        html_text() %>%
+        str_squish()
+    
+    last_week <- billboard_page %>%
+        html_node("ol.chart-list__elements") %>%
+        html_nodes("span.chart-element__meta.text--last") %>%
+        html_text() %>%
+        str_remove_all("\\D") %>%
+        parse_integer()
+    
+    peak <- billboard_page %>%
+        html_node("ol.chart-list__elements") %>%
+        html_nodes("span.chart-element__meta.text--peak") %>%
+        html_text() %>%
+        str_remove_all("\\D") %>%
+        parse_integer()
+    
+    duration <- billboard_page %>%
+        html_node("ol.chart-list__elements") %>%
+        html_nodes("span.chart-element__meta.text--week") %>%
+        html_text() %>%
+        str_remove_all("\\D") %>%
+        parse_integer()
+    
+    tibble(rank = rank, song = song, artist = artist, last_week_rank = last_week, peak_rank = peak, weeks_at_rank = duration)
+}
+```
+
+```{r}
+birthday_charts <- tibble(birthday = birthdays) %>%
+    mutate(hot_100 = map(birthday, get_bb_hot_100, bow_session = billboard_session))
+```
+
+```{r}
+bday_charts_full <- birthday_charts %>%
+    mutate(age = year(birthday) - year(min(birthday))) %>%
+    unnest(hot_100)
+```
+
+```{r}
+write_csv(bday_charts_full, "larson_birthday_hot100.csv")
+```
+

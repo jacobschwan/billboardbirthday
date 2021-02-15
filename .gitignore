@@ -1,0 +1,6 @@
+.Rproj.user
+*.nb.html
+.Rhistory
+.Rdata
+.httr-oauth
+.DS_Store
