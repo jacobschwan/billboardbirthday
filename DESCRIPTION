@@ -21,3 +21,5 @@ Imports:
     stringr,
     readr,
     tibble
+URL: https://github.com/jacobschwan/billboardbirthday
+BugReports: https://github.com/jacobschwan/billboardbirthday/issues
